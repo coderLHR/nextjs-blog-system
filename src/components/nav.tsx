@@ -5,7 +5,13 @@ import { ThemeToggle } from './theme-toggle'
 import { BookOpen, PenTool, Home, LogIn, LogOut, User, CalendarDays } from 'lucide-react'
 
 export async function Nav() {
-  const session = await getSession()
+  let session: Awaited<ReturnType<typeof getSession>> = null
+
+  try {
+    session = await getSession()
+  } catch {
+    session = null
+  }
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/60 glass">

@@ -5,8 +5,20 @@ import { ArrowRight, BookOpen, Zap, Shield, Code } from 'lucide-react'
 import Image from 'next/image'
 
 export default async function Home() {
-  const posts = await getPosts({ published: true, limit: 3 })
-  const session = await getSession()
+  let posts: Awaited<ReturnType<typeof getPosts>> = []
+  let session: Awaited<ReturnType<typeof getSession>> = null
+
+  try {
+    posts = await getPosts({ published: true, limit: 3 })
+  } catch {
+    posts = []
+  }
+
+  try {
+    session = await getSession()
+  } catch {
+    session = null
+  }
 
   return (
     <div className="container py-10 space-y-16">
