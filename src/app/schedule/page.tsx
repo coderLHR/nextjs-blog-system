@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useCallback } from 'react'
-import { Calendar, Plus, RotateCcw, Sparkles, BookOpen, Clock, CalendarCheck } from 'lucide-react'
-import { D3Schedule, useScheduleCourses, type Course } from '@/components/schedule/D3Schedule'
+import { useState, useCallback, useMemo } from 'react'
+import { Calendar, Plus, RotateCcw, Sparkles, BookOpen, Clock, CalendarCheck, AlertTriangle, Trash2, ChevronDown, ChevronUp } from 'lucide-react'
+import { D3Schedule, useScheduleCourses, detectConflicts, getConflictIds, DAY_LABELS, DOPAMINE_COLORS, type Course, type CourseConflict } from '@/components/schedule/D3Schedule'
 import { CourseModal } from '@/components/schedule/CourseModal'
 
 export default function SchedulePage() {
@@ -11,6 +11,7 @@ export default function SchedulePage() {
   const [editingCourse, setEditingCourse] = useState<Course | null>(null)
   const [defaultDay, setDefaultDay] = useState(0)
   const [defaultHour, setDefaultHour] = useState(8)
+  const [showConflictPanel, setShowConflictPanel] = useState(false)
 
   const handleEditCourse = useCallback((course: Course) => {
     setEditingCourse(course)
@@ -42,9 +43,27 @@ export default function SchedulePage() {
     }
   }, [resetCourses])
 
+  // Conflict detection
+  const conflicts = useMemo(() => detectConflicts(courses), [courses])
+  const conflictIds = useMemo(() => getConflictIds(conflicts), [conflicts])
+
+  // Stats
   const courseCount = courses.length
   const weekHours = courses.reduce((sum, c) => sum + c.duration, 0)
-  const todayCourses = courses.filter(c => c.day === (new Date().getDay() === 0 ? 6 : new Date().getDay() - 1))
+  const todayDay = new Date().getDay() === 0 ? 6 : new Date().getDay() - 1
+  const todayCourses = courses.filter(c => c.day === todayDay)
+
+  // Dynamic legend: unique courses with their colors
+  const legendItems = useMemo(() => {
+    const seen = new Map<string, string>()
+    courses.forEach(c => {
+      if (!seen.has(c.name)) {
+        const colorInfo = DOPAMINE_COLORS.find(d => d.value === c.color)
+        seen.set(c.name, colorInfo?.value || c.color)
+      }
+    })
+    return Array.from(seen.entries())
+  }, [courses])
 
   return (
     <div className="container py-8 md:py-12 space-y-8">
@@ -126,6 +145,49 @@ export default function SchedulePage() {
         />
       </div>
 
+      {/* Conflict Alert Banner */}
+      {conflicts.length > 0 && (
+        <button
+          onClick={() => setShowConflictPanel(!showConflictPanel)}
+          className="w-full flex items-center gap-3 px-5 py-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/15 transition-colors text-left"
+        >
+          <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <span className="text-sm font-bold text-amber-600 dark:text-amber-400">
+              检测到 {conflicts.length} 处时间冲突
+            </span>
+            <span className="text-xs text-muted-foreground ml-2">
+              涉及 {conflictIds.size} 门课程，点击查看详情
+            </span>
+          </div>
+          {showConflictPanel
+            ? <ChevronUp className="h-4 w-4 text-muted-foreground" />
+            : <ChevronDown className="h-4 w-4 text-muted-foreground" />
+          }
+        </button>
+      )}
+
+      {/* Conflict Detail Panel */}
+      {showConflictPanel && conflicts.length > 0 && (
+        <div className="rounded-2xl bg-card border border-border/60 overflow-hidden" style={{ boxShadow: 'var(--ios-shadow)' }}>
+          <div className="px-5 py-4 border-b border-border/40">
+            <h3 className="text-sm font-bold flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-amber-500" />
+              冲突详情
+            </h3>
+          </div>
+          <div className="divide-y divide-border/30">
+            {conflicts.map((conflict, idx) => (
+              <ConflictItem
+                key={idx}
+                conflict={conflict}
+                onDelete={handleDelete}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Schedule */}
       <div className="space-y-3">
         <div className="flex items-center justify-between px-1">
@@ -134,23 +196,27 @@ export default function SchedulePage() {
         </div>
         <D3Schedule
           courses={courses}
+          conflictIds={conflictIds}
           onEditCourse={handleEditCourse}
           onAddCourse={handleAddCourse}
         />
       </div>
 
-      {/* Legend */}
+      {/* Dynamic Legend */}
       <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm px-1">
         <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">图例</span>
-        {['数学', '英语', '计算机', '体育', '选修'].map((label, i) => {
-          const colors = ['#FF6B8A', '#5AC8FA', '#BF5AF2', '#34C759', '#FF9500']
-          return (
-            <div key={label} className="flex items-center gap-1.5">
-              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: colors[i] }} />
-              <span className="text-xs text-muted-foreground font-medium">{label}</span>
-            </div>
-          )
-        })}
+        {legendItems.map(([name, color]) => (
+          <div key={name} className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: color }} />
+            <span className="text-xs text-muted-foreground font-medium">{name}</span>
+          </div>
+        ))}
+        {conflicts.length > 0 && (
+          <div className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-full border-2 border-dashed border-red-400" />
+            <span className="text-xs text-red-400 font-medium">冲突</span>
+          </div>
+        )}
         <div className="flex items-center gap-1.5 ml-auto">
           <div className="w-4 h-0.5 rounded-full" style={{ background: 'repeating-linear-gradient(90deg, #FF375F, #FF375F 3px, transparent 3px, transparent 6px)' }} />
           <span className="text-xs text-muted-foreground font-medium">当前时间</span>
@@ -166,6 +232,7 @@ export default function SchedulePage() {
         initialCourse={editingCourse}
         defaultDay={defaultDay}
         defaultHour={defaultHour}
+        allCourses={courses}
       />
     </div>
   )
@@ -200,6 +267,56 @@ function StatCard({
           {value}
           <span className="text-sm font-medium text-muted-foreground ml-1">{unit}</span>
         </p>
+      </div>
+    </div>
+  )
+}
+
+function formatTime(c: Course) {
+  const startStr = `${c.startHour.toString().padStart(2, '0')}:${c.startMinute.toString().padStart(2, '0')}`
+  const endDecimal = c.startHour + c.startMinute / 60 + c.duration
+  const endH = Math.floor(endDecimal)
+  const endM = Math.round((endDecimal - endH) * 60)
+  return `${startStr} - ${endH.toString().padStart(2, '0')}:${endM.toString().padStart(2, '0')}`
+}
+
+function ConflictItem({ conflict, onDelete }: { conflict: CourseConflict; onDelete: (id: string) => void }) {
+  return (
+    <div className="px-5 py-4 space-y-3">
+      <div className="text-xs text-muted-foreground font-medium">
+        {DAY_LABELS[conflict.courseA.day]} · 重叠 {conflict.overlapMinutes} 分钟
+      </div>
+      <div className="flex flex-col sm:flex-row gap-2">
+        {/* Course A */}
+        <div className="flex-1 flex items-center gap-3 bg-background/60 rounded-xl px-3 py-2.5">
+          <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: conflict.courseA.color }} />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold truncate">{conflict.courseA.name}</p>
+            <p className="text-xs text-muted-foreground">{formatTime(conflict.courseA)} · {conflict.courseA.location}</p>
+          </div>
+          <button
+            onClick={() => onDelete(conflict.courseA.id)}
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-colors shrink-0"
+            title={`删除 ${conflict.courseA.name}`}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        </div>
+        {/* Course B */}
+        <div className="flex-1 flex items-center gap-3 bg-background/60 rounded-xl px-3 py-2.5">
+          <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: conflict.courseB.color }} />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold truncate">{conflict.courseB.name}</p>
+            <p className="text-xs text-muted-foreground">{formatTime(conflict.courseB)} · {conflict.courseB.location}</p>
+          </div>
+          <button
+            onClick={() => onDelete(conflict.courseB.id)}
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-colors shrink-0"
+            title={`删除 ${conflict.courseB.name}`}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        </div>
       </div>
     </div>
   )

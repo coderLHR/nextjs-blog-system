@@ -15,7 +15,61 @@ export interface Course {
   teacher?: string
 }
 
+export interface CourseConflict {
+  courseA: Course
+  courseB: Course
+  overlapMinutes: number
+}
+
+/** 检测两门课程是否时间冲突 */
+function hasTimeOverlap(a: Course, b: Course): number {
+  if (a.day !== b.day) return 0
+  const aStart = a.startHour * 60 + a.startMinute
+  const aEnd = aStart + a.duration * 60
+  const bStart = b.startHour * 60 + b.startMinute
+  const bEnd = bStart + b.duration * 60
+  const overlap = Math.min(aEnd, bEnd) - Math.max(aStart, bStart)
+  return overlap > 0 ? overlap : 0
+}
+
+/** 检测所有课程冲突 */
+export function detectConflicts(courses: Course[]): CourseConflict[] {
+  const conflicts: CourseConflict[] = []
+  for (let i = 0; i < courses.length; i++) {
+    for (let j = i + 1; j < courses.length; j++) {
+      const overlap = hasTimeOverlap(courses[i], courses[j])
+      if (overlap > 0) {
+        conflicts.push({ courseA: courses[i], courseB: courses[j], overlapMinutes: overlap })
+      }
+    }
+  }
+  return conflicts
+}
+
+/** 获取所有有冲突的课程 ID 集合 */
+export function getConflictIds(conflicts: CourseConflict[]): Set<string> {
+  const ids = new Set<string>()
+  conflicts.forEach(c => { ids.add(c.courseA.id); ids.add(c.courseB.id) })
+  return ids
+}
+
+/** 检测一个课程（表单数据）与已有课程的冲突 */
+export function detectConflictsFor(
+  draft: { day: number; startHour: number; startMinute: number; duration: number },
+  courses: Course[],
+  excludeId?: string
+): Course[] {
+  return courses.filter(c => {
+    if (excludeId && c.id === excludeId) return false
+    return hasTimeOverlap(
+      { ...c, id: c.id },
+      { ...draft, id: '__draft__', name: '', location: '', color: '' } as Course
+    ) > 0
+  })
+}
+
 const DAYS = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
+export const DAY_LABELS = DAYS
 const START_HOUR = 7
 const END_HOUR = 22
 const HOUR_HEIGHT = 72
@@ -63,14 +117,22 @@ function saveCourses(courses: Course[]) {
 
 interface D3ScheduleProps {
   courses: Course[]
+  conflictIds: Set<string>
   onEditCourse: (course: Course) => void
   onAddCourse: (day: number, hour: number) => void
 }
 
-export function D3Schedule({ courses, onEditCourse, onAddCourse }: D3ScheduleProps) {
+export function D3Schedule({ courses, conflictIds, onEditCourse, onAddCourse }: D3ScheduleProps) {
   const svgRef = useRef<SVGSVGElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 })
+  const [now, setNow] = useState(() => new Date())
+
+  // Real-time clock update every 30s
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 30_000)
+    return () => clearInterval(timer)
+  }, [])
 
   useEffect(() => {
     const handleResize = () => {
@@ -276,6 +338,8 @@ export function D3Schedule({ courses, onEditCourse, onAddCourse }: D3SchedulePro
           onEditCourse(course)
         })
 
+      const isConflict = conflictIds.has(course.id)
+
       // Soft shadow (using a blurred rect behind)
       courseG.append('rect')
         .attr('x', x + 1)
@@ -283,8 +347,8 @@ export function D3Schedule({ courses, onEditCourse, onAddCourse }: D3SchedulePro
         .attr('width', w)
         .attr('height', h)
         .attr('rx', 10)
-        .attr('fill', colorInfo.value)
-        .attr('opacity', 0.08)
+        .attr('fill', isConflict ? '#FF375F' : colorInfo.value)
+        .attr('opacity', isConflict ? 0.12 : 0.08)
 
       // Main card background
       const mainRect = courseG.append('rect')
@@ -294,8 +358,9 @@ export function D3Schedule({ courses, onEditCourse, onAddCourse }: D3SchedulePro
         .attr('height', h)
         .attr('rx', 10)
         .attr('fill', colorInfo.bg)
-        .attr('stroke', colorInfo.border)
-        .attr('stroke-width', 1)
+        .attr('stroke', isConflict ? '#FF375F' : colorInfo.border)
+        .attr('stroke-width', isConflict ? 1.5 : 1)
+        .attr('stroke-dasharray', isConflict ? '4,3' : 'none')
 
       // Left accent bar
       courseG.append('rect')
@@ -347,6 +412,19 @@ export function D3Schedule({ courses, onEditCourse, onAddCourse }: D3SchedulePro
           .text(`${startStr} - ${endStr}`)
       }
 
+      // Conflict warning icon
+      if (isConflict && h > 20) {
+        const iconG = courseG.append('g').attr('transform', `translate(${x + w - 18}, ${y + 6})`)
+        iconG.append('circle').attr('r', 7).attr('cx', 7).attr('cy', 7).attr('fill', '#FF375F').attr('opacity', 0.15)
+        iconG.append('text')
+          .attr('x', 7).attr('y', 11)
+          .attr('text-anchor', 'middle')
+          .attr('fill', '#FF375F')
+          .attr('font-size', '10px')
+          .attr('font-weight', '800')
+          .text('!')
+      }
+
       // Teacher (if available)
       if (course.teacher && h > 62) {
         courseG.append('text')
@@ -380,7 +458,6 @@ export function D3Schedule({ courses, onEditCourse, onAddCourse }: D3SchedulePro
     })
 
     // === CURRENT TIME INDICATOR ===
-    const now = new Date()
     const currentDay = now.getDay() === 0 ? 6 : now.getDay() - 1
     const currentHour = now.getHours() + now.getMinutes() / 60
 
@@ -419,7 +496,7 @@ export function D3Schedule({ courses, onEditCourse, onAddCourse }: D3SchedulePro
         .text('现在')
     }
 
-  }, [dimensions, courses, onEditCourse, onAddCourse])
+  }, [dimensions, courses, conflictIds, onEditCourse, onAddCourse, now])
 
   return (
     <div ref={containerRef} className="w-full overflow-x-auto rounded-2xl bg-card"

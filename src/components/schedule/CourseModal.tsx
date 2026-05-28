@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { X, Clock, MapPin, User, BookOpen, Palette, Trash2 } from 'lucide-react'
-import { DOPAMINE_COLORS, type Course } from './D3Schedule'
+import { useState, useEffect, useMemo } from 'react'
+import { X, Clock, MapPin, User, BookOpen, Palette, Trash2, AlertTriangle } from 'lucide-react'
+import { DOPAMINE_COLORS, DAY_LABELS, detectConflictsFor, type Course } from './D3Schedule'
 
 interface CourseModalProps {
   isOpen: boolean
@@ -12,6 +12,7 @@ interface CourseModalProps {
   initialCourse?: Course | null
   defaultDay?: number
   defaultHour?: number
+  allCourses?: Course[]
 }
 
 export function CourseModal({
@@ -22,6 +23,7 @@ export function CourseModal({
   initialCourse,
   defaultDay = 0,
   defaultHour = 8,
+  allCourses = [],
 }: CourseModalProps) {
   const [name, setName] = useState('')
   const [day, setDay] = useState(defaultDay)
@@ -59,6 +61,16 @@ export function CourseModal({
       setErrors({})
     }
   }, [isOpen, initialCourse, defaultDay, defaultHour])
+
+  // Real-time conflict detection
+  const conflictingCourses = useMemo(() => {
+    if (!isOpen) return []
+    return detectConflictsFor(
+      { day, startHour, startMinute, duration },
+      allCourses,
+      initialCourse?.id
+    )
+  }, [isOpen, day, startHour, startMinute, duration, allCourses, initialCourse])
 
   const validate = () => {
     const newErrors: Record<string, string> = {}
@@ -232,6 +244,34 @@ export function CourseModal({
               />
             </div>
           </div>
+
+          {/* Conflict Warning */}
+          {conflictingCourses.length > 0 && (
+            <div className="rounded-2xl bg-amber-500/10 border border-amber-500/20 p-4 space-y-2">
+              <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+                <AlertTriangle className="h-4 w-4 shrink-0" />
+                <span className="text-sm font-bold">时间冲突警告</span>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                当前时段与以下 {conflictingCourses.length} 门课程存在时间冲突：
+              </p>
+              <div className="space-y-1.5">
+                {conflictingCourses.map(c => {
+                  const endH = Math.floor(c.startHour + c.startMinute / 60 + c.duration)
+                  const endM = Math.round((c.startHour + c.startMinute / 60 + c.duration - endH) * 60)
+                  return (
+                    <div key={c.id} className="flex items-center gap-2 text-xs bg-background/60 rounded-xl px-3 py-2">
+                      <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: c.color }} />
+                      <span className="font-semibold text-foreground">{c.name}</span>
+                      <span className="text-muted-foreground ml-auto">
+                        {DAY_LABELS[c.day]} {c.startHour.toString().padStart(2, '0')}:{c.startMinute.toString().padStart(2, '0')}-{endH.toString().padStart(2, '0')}:{endM.toString().padStart(2, '0')}
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Color */}
           <div>
