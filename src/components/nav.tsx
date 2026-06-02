@@ -1,16 +1,28 @@
-import Link from 'next/link'
-import { getSession } from '@/lib/session'
-import { logout } from '@/lib/actions'
-import { ThemeToggle } from './theme-toggle'
-import { BookOpen, PenTool, Home, LogIn, LogOut, User, CalendarDays } from 'lucide-react'
+import Link from "next/link";
+import { getSession } from "@/lib/session";
+import { logout } from "@/lib/actions";
+import { ThemeToggle } from "./theme-toggle";
+import {
+  BookOpen,
+  PenTool,
+  Home,
+  LogIn,
+  LogOut,
+  User,
+  CalendarDays,
+  Workflow,
+  Network,
+  BarChart3,
+  Edit,
+} from "lucide-react";
 
 export async function Nav() {
-  let session: Awaited<ReturnType<typeof getSession>> = null
+  let session: Awaited<ReturnType<typeof getSession>> = null;
 
   try {
-    session = await getSession()
+    session = await getSession();
   } catch {
-    session = null
+    session = null;
   }
 
   return (
@@ -28,10 +40,14 @@ export async function Nav() {
           </Link>
           <nav className="hidden md:flex items-center gap-1 text-sm font-medium">
             {[
-              { href: '/', icon: Home, label: '首页' },
-              { href: '/blog', icon: PenTool, label: '博客' },
-              { href: '/learn', icon: BookOpen, label: '教学' },
-              { href: '/schedule', icon: CalendarDays, label: '课程表' },
+              { href: "/", icon: Home, label: "首页" },
+              { href: "/blog", icon: PenTool, label: "博客" },
+              { href: "/learn", icon: BookOpen, label: "教学" },
+              { href: "/schedule", icon: CalendarDays, label: "课程表" },
+              { href: "/ability-map", icon: Workflow, label: "能力图谱" },
+              { href: "/knowledge-map", icon: Network, label: "知识点关联" },
+              { href: "/indicators", icon: BarChart3, label: "达成度分析" },
+              { href: "/knowledge-map/edit", icon: Edit, label: "知识点编辑" },
             ].map((item) => (
               <Link
                 key={item.href}
@@ -53,20 +69,14 @@ export async function Nav() {
                 {session.name || session.email}
               </span>
               <form action={logout}>
-                <button
-                  type="submit"
-                  className="ios-btn ios-btn-secondary"
-                >
+                <button type="submit" className="ios-btn ios-btn-secondary">
                   <LogOut className="h-3.5 w-3.5" />
                   <span className="hidden sm:inline">退出</span>
                 </button>
               </form>
             </div>
           ) : (
-            <Link
-              href="/login"
-              className="ios-btn ios-btn-primary"
-            >
+            <Link href="/login" className="ios-btn ios-btn-primary">
               <LogIn className="h-3.5 w-3.5" />
               登录
             </Link>
@@ -74,5 +84,5 @@ export async function Nav() {
         </div>
       </div>
     </header>
-  )
+  );
 }
