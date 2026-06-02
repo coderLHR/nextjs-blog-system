@@ -24,7 +24,7 @@ export default function ServerComponentsPage() {
             <li>所有 Hooks 可用</li>
             <li>浏览器 API 可用</li>
             <li>被打包到 bundle</li>
-            <li>以 'use client' 标记</li>
+            <li>以 &apos;use client&apos; 标记</li>
           </ul>
         </div>
       </section>
@@ -54,7 +54,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <h4 className="font-semibold text-emerald-900 mb-2">💡 最佳实践</h4>
         <ul className="text-sm text-emerald-800 space-y-1 list-disc ml-5">
           <li>默认所有组件都是 Server Components（Next.js App Router）</li>
-          <li>需要交互时才添加 'use client'</li>
+          <li>需要交互时才添加 &apos;use client&apos;</li>
           <li>将 Client Components 尽量往下推（叶子节点）</li>
           <li>Server Components 可嵌套在 Client Components 的 children 中</li>
         </ul>

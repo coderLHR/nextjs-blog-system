@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { getPosts } from '@/lib/actions'
 import { getSession } from '@/lib/session'
-import { ArrowRight, PenLine, Eye } from 'lucide-react'
+import { PenLine, Eye } from 'lucide-react'
 import Image from 'next/image'
 
 export default async function BlogPage() {

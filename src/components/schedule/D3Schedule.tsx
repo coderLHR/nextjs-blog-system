@@ -351,7 +351,7 @@ export function D3Schedule({ courses, conflictIds, onEditCourse, onAddCourse }: 
         .attr('opacity', isConflict ? 0.12 : 0.08)
 
       // Main card background
-      const mainRect = courseG.append('rect')
+            courseG.append('rect')
         .attr('x', x)
         .attr('y', y)
         .attr('width', w)

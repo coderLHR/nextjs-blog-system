@@ -8,7 +8,6 @@ import {
   Home,
   LogIn,
   LogOut,
-  User,
   CalendarDays,
   Workflow,
   Network,

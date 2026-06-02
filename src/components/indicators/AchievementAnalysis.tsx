@@ -113,8 +113,7 @@ function drawWheel(
   const svg = d3.select(el);
   svg.selectAll("*").remove();
 
-  const W = 300,
-    H = 360;
+  const H = 360;
   const CX = 0,
     CY = H / 2; // centre at left edge → right half visible, left half clipped
   const INNER = 78,

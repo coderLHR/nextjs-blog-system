@@ -64,7 +64,7 @@ export default function CachingPage() {
       <div className="p-4 rounded-lg bg-emerald-50 border border-emerald-200">
         <h4 className="font-semibold text-emerald-900 mb-2">💡 Next.js 15 缓存变化</h4>
         <ul className="text-sm text-emerald-800 space-y-1 list-disc ml-5">
-          <li>fetch 默认 <strong>不缓存</strong>（cache: 'no-store'）</li>
+          <li>fetch 默认 <strong>不缓存</strong>（cache: &apos;no-store&apos;）</li>
           <li>路由处理器默认 <strong>动态渲染</strong></li>
           <li>需要缓存时显式声明：fetch(url, {'{ cache: "force-cache" }'})</li>
           <li>使用 revalidatePath / revalidateTag 按需刷新</li>
