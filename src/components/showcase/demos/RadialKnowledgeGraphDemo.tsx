@@ -149,10 +149,12 @@ export default function RadialKnowledgeGraphDemo() {
       .attr('stroke-opacity', 0.6)
       .attr(
         'd',
+        /* eslint-disable @typescript-eslint/no-explicit-any */
         d3
           .linkRadial<d3.HierarchyPointLink<TreeDatum>, d3.HierarchyPointNode<TreeDatum>>()
           .angle((d) => d.x)
           .radius((d) => d.y) as any
+        /* eslint-enable @typescript-eslint/no-explicit-any */
       )
 
     const node = g

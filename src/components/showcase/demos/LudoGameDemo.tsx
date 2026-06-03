@@ -5,6 +5,14 @@ import Script from 'next/script'
 
 type NodeType = 'normal' | 'forward' | 'backward'
 
+interface AnimeInstance {
+  set: (el: Element, props: Record<string, unknown>) => void
+  remove: (el: Element) => void
+  (opts: Record<string, unknown>): { finished: Promise<void>; progress: number }
+}
+
+type WindowWithAnime = Window & typeof globalThis & { anime: AnimeInstance }
+
 interface PathNode {
   id: number
   x: number
@@ -51,13 +59,14 @@ export default function LudoGameDemo() {
       }
       arr.push({ id: i, x: point.x, y: point.y, type })
     }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setNodes(arr)
   }, [animeReady])
 
   // 节点初始化后将玩家设置到起点
   useEffect(() => {
     if (nodes.length === 0) return
-    const w = window as unknown as { anime: any }
+    const w = window as WindowWithAnime
     if (playerRef.current && w.anime) {
       w.anime.set(playerRef.current, {
         translateX: nodes[0].x,
@@ -75,7 +84,7 @@ export default function LudoGameDemo() {
   const showToast = useCallback(
     (msg: string) => {
       setToastMsg(msg)
-      const w = window as unknown as { anime: any }
+      const w = window as WindowWithAnime
       if (!toastRef.current || !w.anime) return
       w.anime.remove(toastRef.current)
       w.anime({
@@ -94,7 +103,7 @@ export default function LudoGameDemo() {
 
   const movePlayer = useCallback(
     async (steps: number) => {
-      const w = window as unknown as { anime: any }
+      const w = window as WindowWithAnime
       if (!w.anime || !playerRef.current) return
       const dir = steps > 0 ? 1 : -1
       let remaining = Math.abs(steps)
@@ -130,7 +139,7 @@ export default function LudoGameDemo() {
 
   const rollDice = useCallback(async () => {
     if (isRolling) return
-    const w = window as unknown as { anime: any }
+    const w = window as WindowWithAnime
     if (!w.anime) return
     setIsRolling(true)
 
@@ -138,6 +147,7 @@ export default function LudoGameDemo() {
     if (currentIndex >= TOTAL_NODES - 1) {
       setCurrentIndex(0)
       if (playerRef.current && nodes[0]) {
+        const w = window as WindowWithAnime
         w.anime.set(playerRef.current, {
           translateX: nodes[0].x,
           translateY: nodes[0].y,
@@ -158,7 +168,7 @@ export default function LudoGameDemo() {
         scale: [1, 1.2, 0.9, 1],
         duration: 600,
         easing: 'easeInOutQuad',
-        update: (anim: any) => {
+        update: (anim: { progress: number }) => {
           if (Math.round(anim.progress) % 10 === 0) {
             setDiceFace(String(Math.floor(Math.random() * 6) + 1))
           }
@@ -209,7 +219,7 @@ export default function LudoGameDemo() {
 
       <div
         className="relative flex h-full max-h-[720px] w-full max-w-[1000px] flex-col overflow-hidden rounded-3xl bg-white shadow-[0_20px_40px_-10px_rgba(0,0,0,0.08)]"
-        style={{ ['--lg-track-base' as any]: '#e2e8f0', ['--lg-track-dash' as any]: '#94a3b8', ['--lg-forward' as any]: '#10b981', ['--lg-backward' as any]: '#f43f5e' }}
+        style={{ ['--lg-track-base' as string]: '#e2e8f0', ['--lg-track-dash' as string]: '#94a3b8', ['--lg-forward' as string]: '#10b981', ['--lg-backward' as string]: '#f43f5e' } as React.CSSProperties}
       >
         {/* 图例 */}
         <div className="absolute left-7 top-7 z-10 flex flex-col gap-2.5 rounded-xl bg-white/90 p-4 text-[13px] text-[#475569] shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05)]">

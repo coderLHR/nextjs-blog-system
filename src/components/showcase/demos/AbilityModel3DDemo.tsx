@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 
@@ -34,8 +34,6 @@ export default function AbilityModel3DDemo() {
   const tooltipRef = useRef<HTMLDivElement>(null)
   const ttTitleRef = useRef<HTMLDivElement>(null)
   const ttDescRef = useRef<HTMLDivElement>(null)
-  const [ready, setReady] = useState(false)
-
   useEffect(() => {
     const mount = mountRef.current
     if (!mount) return
@@ -245,7 +243,6 @@ export default function AbilityModel3DDemo() {
       renderer.render(scene, camera)
       raf = requestAnimationFrame(animate)
     }
-    setReady(true)
     animate()
 
     const onResize = () => {

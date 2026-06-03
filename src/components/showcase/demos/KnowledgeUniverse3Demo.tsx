@@ -9,6 +9,27 @@ interface CategoryData {
   children: string[]
 }
 
+interface GNode {
+  id: string
+  name: string
+  x?: number
+  y?: number
+  symbol?: string
+  symbolSize?: number
+  fixed?: boolean
+  draggable?: boolean
+  orbitAngle?: number
+  parent?: string
+  itemStyle?: Record<string, unknown>
+  label?: Record<string, unknown>
+}
+
+interface GLink {
+  source: string
+  target: string
+  lineStyle: Record<string, unknown>
+}
+
 const CATEGORY_DATA: CategoryData[] = [
   {
     name: '基础知识',
@@ -40,8 +61,8 @@ export default function KnowledgeUniverse3Demo() {
   const mountRef = useRef<HTMLDivElement>(null)
   const starsContainerRef = useRef<HTMLDivElement>(null)
   const chartRef = useRef<echarts.ECharts | null>(null)
-  const nodesRef = useRef<any[]>([])
-  const linksRef = useRef<any[]>([])
+  const nodesRef = useRef<GNode[]>([])
+  const linksRef = useRef<GLink[]>([])
 
   useEffect(() => {
     // DOM 星空
@@ -70,8 +91,8 @@ export default function KnowledgeUniverse3Demo() {
     const chart = echarts.init(mountRef.current)
     chartRef.current = chart
 
-    const nodes: any[] = []
-    const links: any[] = []
+    const nodes: GNode[] = []
+    const links: GLink[] = []
 
     nodes.push({
       id: 'center',
@@ -217,14 +238,14 @@ export default function KnowledgeUniverse3Demo() {
         if (node.id === 'center') {
           node.symbolSize = 160 + Math.sin(t * 4) * 10
         } else {
-          const base = node.symbolSize > 50 ? 82 : 30
+          const base = (node.symbolSize ?? 30) > 50 ? 82 : 30
           node.symbolSize = base + Math.sin(t * 3 + index) * 1.5
         }
       })
 
       // 分类公转
       nodesRef.current.forEach((node) => {
-        if (node.orbitAngle !== undefined && node.symbolSize > 50) {
+        if (node.orbitAngle !== undefined && (node.symbolSize ?? 0) > 50) {
           node.orbitAngle += 0.001
           node.x = Math.cos(node.orbitAngle) * categoryRadius
           node.y = Math.sin(node.orbitAngle) * categoryRadius
@@ -235,11 +256,12 @@ export default function KnowledgeUniverse3Demo() {
       CATEGORY_DATA.forEach((cat) => {
         cat.children.forEach((child) => {
           const node = nodesRef.current.find((n) => n.id === child)
-          if (node) {
-            node.orbitAngle += 0.001
+          if (node && node.orbitAngle !== undefined) {
+            const angle = node.orbitAngle + 0.001
+            node.orbitAngle = angle
             const r = 700
-            node.x = Math.cos(node.orbitAngle) * r
-            node.y = Math.sin(node.orbitAngle) * r
+            node.x = Math.cos(angle) * r
+            node.y = Math.sin(angle) * r
           }
         })
       })
@@ -263,16 +285,17 @@ export default function KnowledgeUniverse3Demo() {
     }, 80)
 
     // hover 聚焦
-    const onMouseOver = (params: any) => {
-      const current = params.data.id
+    const onMouseOver = (params: echarts.ECElementEvent) => {
+      const current = (params.data as { id: string }).id
       const connected = new Set<string>()
       linksRef.current.forEach((link) => {
         if (link.source === current || link.target === current) {
-          connected.add(typeof link.source === 'string' ? link.source : link.source.id)
-          connected.add(typeof link.target === 'string' ? link.target : link.target.id)
+          connected.add(link.source)
+          connected.add(link.target)
         }
       })
       nodesRef.current.forEach((node) => {
+        if (!node.itemStyle) return
         if (node.id === current || connected.has(node.id)) {
           node.itemStyle.opacity = 1
         } else {
@@ -283,7 +306,7 @@ export default function KnowledgeUniverse3Demo() {
     }
     const onMouseOut = () => {
       nodesRef.current.forEach((node) => {
-        node.itemStyle.opacity = 1
+        if (node.itemStyle) node.itemStyle.opacity = 1
       })
       chart.setOption({ series: [{ data: nodesRef.current }] })
     }

@@ -81,6 +81,23 @@ export default function AnnotationSystemDemo() {
     setShowToolbar(true)
   }, [])
 
+  const buildPath = (id: number) => {
+    const anchorEl = document.querySelector(`[data-id="${id}"]`) as HTMLElement | null
+    const cardEl = cardRefs.current[id]
+    if (!anchorEl || !cardEl) return ''
+    const a = anchorEl.getBoundingClientRect()
+    const c = cardEl.getBoundingClientRect()
+    const x1 = a.right + 8
+    const y1 = a.top + a.height / 2
+    const x2 = c.left
+    const y2 = c.top + c.height / 2
+    if (Math.abs(y1 - y2) < 20) {
+      return `M ${x1} ${y1} L ${x2} ${y2}`
+    }
+    const midX = (x1 + x2) / 2
+    return `M ${x1} ${y1} L ${midX - 20} ${y1} Q ${midX} ${y1} ${midX} ${y1 + 20} L ${midX} ${y2 - 20} Q ${midX} ${y2} ${midX + 20} ${y2} L ${x2} ${y2}`
+  }
+
   const addComment = useCallback(() => {
     const sel = currentSelectionRef.current
     if (!sel) return
@@ -100,23 +117,6 @@ export default function AnnotationSystemDemo() {
       setComments((prev) => prev.map((c) => (c.id === newItem.id ? { ...c, path: buildPath(newItem.id) } : c)))
     })
   }, [])
-
-  const buildPath = (id: number) => {
-    const anchorEl = document.querySelector(`[data-id="${id}"]`) as HTMLElement | null
-    const cardEl = cardRefs.current[id]
-    if (!anchorEl || !cardEl) return ''
-    const a = anchorEl.getBoundingClientRect()
-    const c = cardEl.getBoundingClientRect()
-    const x1 = a.right + 8
-    const y1 = a.top + a.height / 2
-    const x2 = c.left
-    const y2 = c.top + c.height / 2
-    if (Math.abs(y1 - y2) < 20) {
-      return `M ${x1} ${y1} L ${x2} ${y2}`
-    }
-    const midX = (x1 + x2) / 2
-    return `M ${x1} ${y1} L ${midX - 20} ${y1} Q ${midX} ${y1} ${midX} ${y1 + 20} L ${midX} ${y2 - 20} Q ${midX} ${y2} ${midX + 20} ${y2} L ${x2} ${y2}`
-  }
 
   // 更新所有连线
   const updateAllPaths = useCallback(() => {

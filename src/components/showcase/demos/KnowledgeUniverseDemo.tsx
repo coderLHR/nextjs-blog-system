@@ -9,6 +9,25 @@ interface CategoryData {
   children: string[]
 }
 
+interface GNode {
+  id: string
+  name: string
+  x?: number
+  y?: number
+  symbol?: string
+  symbolSize?: number
+  fixed?: boolean
+  draggable?: boolean
+  itemStyle?: Record<string, unknown>
+  label?: Record<string, unknown>
+}
+
+interface GLink {
+  source: string
+  target: string
+  lineStyle: Record<string, unknown>
+}
+
 const CATEGORY_DATA: CategoryData[] = [
   {
     name: '基础知识',
@@ -40,7 +59,7 @@ export default function KnowledgeUniverseDemo() {
   const mountRef = useRef<HTMLDivElement>(null)
   const starsContainerRef = useRef<HTMLDivElement>(null)
   const chartRef = useRef<echarts.ECharts | null>(null)
-  const nodesRef = useRef<any[]>([])
+  const nodesRef = useRef<GNode[]>([])
 
   useEffect(() => {
     // 创建 DOM 星空
@@ -69,8 +88,8 @@ export default function KnowledgeUniverseDemo() {
     const chart = echarts.init(mountRef.current)
     chartRef.current = chart
 
-    const nodes: any[] = []
-    const links: any[] = []
+    const nodes: GNode[] = []
+    const links: GLink[] = []
 
     // 中心核心
     nodes.push({
@@ -213,7 +232,7 @@ export default function KnowledgeUniverseDemo() {
         if (node.id === 'center') {
           node.symbolSize = 140 + Math.sin(t) * 8
         } else {
-          const base = node.symbolSize > 50 ? 70 : 28
+          const base = (node.symbolSize ?? 28) > 50 ? 70 : 28
           node.symbolSize = base + Math.sin(t + index) * 1.5
         }
       })
