@@ -13,6 +13,7 @@ import {
   Network,
   BarChart3,
   Edit,
+  Sparkles,
 } from "lucide-react";
 
 export async function Nav() {
@@ -47,6 +48,7 @@ export async function Nav() {
               { href: "/knowledge-map", icon: Network, label: "知识点关联" },
               { href: "/indicators", icon: BarChart3, label: "达成度分析" },
               { href: "/knowledge-map/edit", icon: Edit, label: "知识点编辑" },
+              { href: "/showcase", icon: Sparkles, label: "展示厅" },
             ].map((item) => (
               <Link
                 key={item.href}
