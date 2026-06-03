@@ -29,11 +29,6 @@ jobs:
 
       - run: npm ci
 
-      - name: Generate Prisma client
-        run: npx prisma generate
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL || 'postgresql://dummy:dummy@localhost:5432/dummy' }}
-
       - run: npm run lint
 
   build:
@@ -64,7 +59,8 @@ jobs:
           restore-keys: |
             nextjs-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-
 
-      - run: npm run build
+      # Use Turbopack for 2-3x faster production builds (Next.js 16+)
+      - run: npm run build -- --turbopack
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL || 'postgresql://dummy:dummy@localhost:5432/dummy' }}
 
