@@ -14,8 +14,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  lint:
-    name: Lint
+  ci:
+    name: CI
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
@@ -27,24 +27,16 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
 
-      - run: npm ci
-
-      - run: npm run lint
-
-  build:
-    name: Build
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        id: nm-cache
         with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: npm
+          path: node_modules
+          key: nm-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
 
-      - run: npm ci
+      - name: Install dependencies
+        if: steps.nm-cache.outputs.cache-hit != 'true'
+        run: npm ci
 
       - name: Generate Prisma client
         run: npx prisma generate
@@ -59,13 +51,16 @@ jobs:
           restore-keys: |
             nextjs-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-
 
-      # Use Turbopack for 2-3x faster production builds (Next.js 16+)
-      - run: npm run build -- --turbopack
+      - name: Lint
+        run: npm run lint
+
+      - name: Build (Turbopack)
+        run: npm run build -- --turbopack
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL || 'postgresql://dummy:dummy@localhost:5432/dummy' }}
 
   deploy:
-    needs: [lint, build]
+    needs: ci
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
