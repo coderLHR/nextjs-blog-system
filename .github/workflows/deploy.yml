@@ -14,14 +14,12 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  ci:
-    name: CI
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
     timeout-minutes: 5
-
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
@@ -34,8 +32,30 @@ jobs:
           path: node_modules
           key: nm-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
 
-      - name: Install dependencies
-        if: steps.nm-cache.outputs.cache-hit != 'true'
+      - if: steps.nm-cache.outputs.cache-hit != 'true'
+        run: npm ci
+
+      - run: npm run lint
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        id: nm-cache
+        with:
+          path: node_modules
+          key: nm-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - if: steps.nm-cache.outputs.cache-hit != 'true'
         run: npm ci
 
       - name: Generate Prisma client
@@ -51,16 +71,12 @@ jobs:
           restore-keys: |
             nextjs-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-
 
-      - name: Lint
-        run: npm run lint
-
-      - name: Build (Turbopack)
-        run: npm run build -- --turbopack
+      - run: npm run build -- --turbopack
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL || 'postgresql://dummy:dummy@localhost:5432/dummy' }}
 
   deploy:
-    needs: ci
+    needs: [lint, build]
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
