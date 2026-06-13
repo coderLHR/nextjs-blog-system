@@ -148,3 +148,52 @@ export async function incrementViews(slug: string) {
     data: { views: { increment: 1 } },
   })
 }
+
+// ==============================
+// Stats Actions
+// ==============================
+
+export async function getStats() {
+  const [postCount, totalViews, userCount] = await Promise.all([
+    prisma.post.count({ where: { published: true } }),
+    prisma.post.aggregate({ _sum: { views: true } }),
+    prisma.user.count(),
+  ])
+  return {
+    postCount,
+    totalViews: totalViews._sum.views ?? 0,
+    userCount,
+  }
+}
+
+// ==============================
+// Site Config Actions
+// ==============================
+
+export async function getSiteConfig() {
+  const configs = await prisma.siteConfig.findMany()
+  const map: Record<string, string> = {}
+  for (const c of configs) {
+    map[c.key] = c.value
+  }
+  return map
+}
+
+// ==============================
+// Search Actions
+// ==============================
+
+export async function searchPosts(query: string) {
+  if (!query.trim()) return []
+  return prisma.post.findMany({
+    where: {
+      published: true,
+      OR: [
+        { title: { contains: query, mode: 'insensitive' } },
+        { excerpt: { contains: query, mode: 'insensitive' } },
+      ],
+    },
+    take: 6,
+    select: { id: true, title: true, slug: true, excerpt: true },
+  })
+}

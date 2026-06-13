@@ -1,0 +1,10 @@
+schema_version: 1
+module_path: app/knowledge_map
+title: 知识图谱管理与编辑
+scope:
+    - src/app/knowledge-map/
+    - src/components/knowledge-map/
+    - src/app/api/knowledge-map/
+source_files: []
+depends_on: []
+related_to: []

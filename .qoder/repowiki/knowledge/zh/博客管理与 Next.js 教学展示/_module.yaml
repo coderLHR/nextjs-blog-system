@@ -1,0 +1,9 @@
+schema_version: 1
+module_path: app/content
+title: 博客管理与 Next.js 教学展示
+scope:
+    - src/app/blog/
+    - src/app/learn/
+source_files: []
+depends_on: []
+related_to: []

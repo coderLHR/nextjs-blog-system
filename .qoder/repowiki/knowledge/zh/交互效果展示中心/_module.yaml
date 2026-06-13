@@ -1,0 +1,9 @@
+schema_version: 1
+module_path: app/showcase
+title: 交互效果展示中心
+scope:
+    - src/app/showcase/
+    - src/components/showcase/
+source_files: []
+depends_on: []
+related_to: []

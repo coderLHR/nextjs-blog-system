@@ -1,0 +1,48 @@
+# 知识卡导出索引文件
+schema_version: 1
+locale: zh-CN
+branch: main
+exported_at: "2026-06-08T03:16:26Z"
+modules:
+    app/ai_chat:
+        dir_name: AI 对话与会话管理
+        title: AI 对话与会话管理
+        scope:
+            - src/app/ai-chat/
+            - src/components/ai-chat/
+            - src/app/api/ai/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to: []
+    app/content:
+        dir_name: 博客管理与 Next.js 教学展示
+        title: 博客管理与 Next.js 教学展示
+        scope:
+            - src/app/blog/
+            - src/app/learn/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to: []
+    app/knowledge_map:
+        dir_name: 知识图谱管理与编辑
+        title: 知识图谱管理与编辑
+        scope:
+            - src/app/knowledge-map/
+            - src/components/knowledge-map/
+            - src/app/api/knowledge-map/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to: []
+    app/showcase:
+        dir_name: 交互效果展示中心
+        title: 交互效果展示中心
+        scope:
+            - src/app/showcase/
+            - src/components/showcase/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to: []
